@@ -1,10 +1,13 @@
 import express, { Express, Request, Response } from "express";
+import cors from "cors";
 import { MANGA } from "@consumet/extensions";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
 
 const port = process.env.PORT || 3000;
+
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.json({ success: true });
