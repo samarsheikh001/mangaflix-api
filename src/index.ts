@@ -1,6 +1,7 @@
-import express, { Express, Request, Response } from "express";
+import express, { Express, Request, Response, query } from "express";
 import cors from "cors";
 import { MANGA } from "@consumet/extensions";
+import { getAmazonProducts } from "./amazon-scrape.js";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
@@ -25,6 +26,11 @@ app.get("/manga/info/:query", async (req, res) => {
 
 app.get("/manga/chapter/:query", async (req, res) => {
   const data = await mangasee123.fetchChapterPages(req.params.query);
+  res.json({ success: true, data });
+});
+
+app.get("/products/:query", async (req, res) => {
+  const data = await getAmazonProducts(req.params.query);
   res.json({ success: true, data });
 });
 
