@@ -9,7 +9,6 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import https from "https";
 import http from "http";
 import url from "url";
-import axiosInstance from "./sock-axios.js";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
@@ -18,13 +17,63 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 
-const agent = new SocksProxyAgent("socks5://localhost:9050");
+function createAxiosSocks5ProxyAdapter(proxyUrl) {
+  return async function axiosSocks5ProxyAdapter(config) {
+    const agent = new SocksProxyAgent(proxyUrl);
+
+    const { url, method, headers, data } = config;
+    const protocol = new URL(url).protocol;
+
+    const requestOptions = {
+      method: method.toUpperCase(),
+      headers: headers,
+      agent: agent,
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = (protocol === "https:" ? https : http).request(
+        url,
+        requestOptions,
+        (res) => {
+          let responseData = "";
+          res.on("data", (chunk) => {
+            responseData += chunk;
+          });
+          res.on("end", () => {
+            resolve({
+              status: res.statusCode,
+              statusText: res.statusMessage,
+              headers: res.headers,
+              config: config,
+              request: req,
+              data: responseData,
+            });
+          });
+        }
+      );
+
+      req.on("error", (error) => {
+        reject(error);
+      });
+
+      if (data) {
+        req.write(data);
+      }
+      req.end();
+    });
+  };
+}
+
+// Usage example
+const socks5ProxyUrl = "socks5://localhost:9050";
+const axiosInstance = axios.create({
+  adapter: createAxiosSocks5ProxyAdapter(socks5ProxyUrl) as AxiosAdapter,
+});
+
+// const agent = new SocksProxyAgent("socks5://localhost:9050");
 
 app.get("/", async (req, res) => {
-  const response = await axios.get("https://api.ipify.org?format=json", {
-    httpsAgent: agent,
-    httpAgent: agent,
-  });
+  const response = await axiosInstance.get("https://api.ipify.org?format=json");
   res.json({ success: true, data: response.data });
 });
 
