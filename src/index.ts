@@ -18,8 +18,13 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 
+const agent = new SocksProxyAgent("socks5://localhost:9050");
+
 app.get("/", async (req, res) => {
-  const response = await axios.get("https://api.ipify.org?format=json");
+  const response = await axios.get("https://api.ipify.org?format=json", {
+    httpsAgent: agent,
+    httpAgent: agent,
+  });
   res.json({ success: true, data: response.data });
 });
 
