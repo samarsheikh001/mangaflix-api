@@ -9,6 +9,7 @@ import { HttpsProxyAgent } from "https-proxy-agent";
 import https from "https";
 import http from "http";
 import url from "url";
+import axiosInstance from "./sock-axios.js";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
@@ -16,32 +17,6 @@ const mangasee123 = new MANGA.Mangasee123();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-
-// Create a SOCKS5 agent
-const socksAgent = new SocksProxyAgent("socks5://localhost:9050");
-
-// Create a custom adapter
-const socksAdapter: AxiosAdapter = (
-  config: AxiosRequestConfig
-): AxiosPromise => {
-  // Add the SOCKS5 agent to the request config
-  config.httpAgent = socksAgent;
-  config.httpsAgent = socksAgent;
-
-  // Use the default Axios adapter
-  const defaultAdapter: AxiosAdapter = axios.defaults.adapter as AxiosAdapter;
-  if (!defaultAdapter) {
-    throw new Error("No default Axios adapter found");
-  }
-
-  // Make the request using the default Axios adapter
-  return defaultAdapter(config as any);
-};
-
-// Create a custom Axios instance
-const axiosInstance = axios.create({
-  adapter: socksAdapter,
-});
 
 app.get("/", async (req, res) => {
   const response = await axiosInstance.get("https://api.ipify.org?format=json");
