@@ -5,7 +5,7 @@
     "dev": "tsc && node dist/index.js"
   },
   "dependencies": {
-    "@consumet/extensions": "^1.5.6",
+    "@consumet/extensions": "^1.6.0",
     "@types/cheerio": "^0.22.35",
     "@types/express": "^4.17.21",
     "axios": "^1.6.7",
