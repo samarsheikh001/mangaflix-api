@@ -6,6 +6,7 @@ import axios, { AxiosAdapter } from "axios";
 import torRequest from "tor-request";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import https from "https";
+import http from "http";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
@@ -50,13 +51,15 @@ const socks5Adapter: AxiosAdapter = (config) => {
   return new Promise((resolve, reject) => {
     const agent = new SocksProxyAgent("socks5://localhost:9050");
 
-    const options: https.RequestOptions = {
+    const protocol = config.url?.startsWith("https") ? https : http;
+
+    const options: http.RequestOptions = {
       method: config.method?.toUpperCase(),
       headers: config.headers,
       agent: agent,
     };
 
-    const req = https.request(config.url!, options, (res) => {
+    const req = protocol.request(config.url!, options, (res) => {
       const response: any = {
         status: res.statusCode,
         statusText: res.statusMessage,
@@ -65,7 +68,6 @@ const socks5Adapter: AxiosAdapter = (config) => {
         request: req,
       };
 
-      res.setEncoding("utf8");
       let responseBody = "";
       res.on("data", (chunk) => {
         responseBody += chunk;
