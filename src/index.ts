@@ -4,6 +4,8 @@ import { MANGA } from "@consumet/extensions";
 import { getAmazonProducts } from "./amazon-scrape.js";
 import axios, { AxiosAdapter } from "axios";
 import torRequest from "tor-request";
+import { SocksProxyAgent } from "socks-proxy-agent";
+import https from "https";
 
 const app: Express = express();
 const mangasee123 = new MANGA.Mangasee123();
@@ -44,9 +46,52 @@ const torAdapter: AxiosAdapter = (config: any) => {
   });
 };
 
+const socks5Adapter: AxiosAdapter = (config) => {
+  return new Promise((resolve, reject) => {
+    const agent = new SocksProxyAgent("socks5://localhost:9050");
+
+    const options: https.RequestOptions = {
+      method: config.method?.toUpperCase(),
+      headers: config.headers,
+      agent: agent,
+    };
+
+    const req = https.request(config.url!, options, (res) => {
+      const response: any = {
+        status: res.statusCode,
+        statusText: res.statusMessage,
+        headers: res.headers,
+        config: config,
+        request: req,
+      };
+
+      res.setEncoding("utf8");
+      let responseBody = "";
+      res.on("data", (chunk) => {
+        responseBody += chunk;
+      });
+
+      res.on("end", () => {
+        response.data = responseBody;
+        resolve(response);
+      });
+    });
+
+    req.on("error", (err) => {
+      reject(err);
+    });
+
+    if (config.data) {
+      req.write(JSON.stringify(config.data));
+    }
+
+    req.end();
+  });
+};
+
 // Create an Axios instance with the Tor adapter
 const axiosTor = axios.create({
-  adapter: torAdapter,
+  adapter: socks5Adapter,
 });
 
 app.get("/", async (req, res) => {
