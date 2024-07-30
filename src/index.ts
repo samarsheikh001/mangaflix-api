@@ -21,8 +21,13 @@ function createAxiosSocks5ProxyAdapter(proxyUrl) {
   return async function axiosSocks5ProxyAdapter(config) {
     const agent = new SocksProxyAgent(proxyUrl);
 
-    const { url, method, headers, data } = config;
+    const { url, method, headers = {}, data } = config;
     const protocol = new URL(url).protocol;
+
+    // Remove undefined headers
+    Object.keys(headers).forEach(
+      (key) => headers[key] === undefined && delete headers[key]
+    );
 
     const requestOptions = {
       method: method.toUpperCase(),
@@ -57,7 +62,7 @@ function createAxiosSocks5ProxyAdapter(proxyUrl) {
       });
 
       if (data) {
-        req.write(data);
+        req.write(typeof data === "string" ? data : JSON.stringify(data));
       }
       req.end();
     });
