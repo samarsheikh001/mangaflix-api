@@ -2,7 +2,13 @@ import express, { Express, Request, Response, query } from "express";
 import cors from "cors";
 import { MANGA } from "@consumet/extensions";
 import { getAmazonProducts } from "./amazon-scrape.js";
-import axios, { AxiosAdapter, AxiosPromise, AxiosRequestConfig } from "axios";
+import axios, {
+  Axios,
+  AxiosAdapter,
+  AxiosDefaults,
+  AxiosPromise,
+  AxiosRequestConfig,
+} from "axios";
 import torRequest from "tor-request";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { HttpsProxyAgent } from "https-proxy-agent";
@@ -11,17 +17,22 @@ import http from "http";
 import url from "url";
 
 const app: Express = express();
-const mangasee123 = new MANGA.Mangasee123();
 
 const port = process.env.PORT || 3000;
+const socks5ProxyUrl = "socks5://localhost:9050";
 
 app.use(cors());
 
-function createAxiosSocks5ProxyAdapter(proxyUrl) {
-  return async function axiosSocks5ProxyAdapter(config) {
+function createAxiosSocks5ProxyAdapter(proxyUrl: string): AxiosAdapter {
+  return function axiosSocks5ProxyAdapter(config: any): AxiosPromise {
     const agent = new SocksProxyAgent(proxyUrl);
 
-    const { url, method, headers = {}, data } = config;
+    const { url, method, headers = {}, data, responseType } = config;
+
+    if (!url) {
+      return Promise.reject(new Error("No URL provided"));
+    }
+
     const protocol = new URL(url).protocol;
 
     // Remove undefined headers
@@ -29,8 +40,8 @@ function createAxiosSocks5ProxyAdapter(proxyUrl) {
       (key) => headers[key] === undefined && delete headers[key]
     );
 
-    const requestOptions = {
-      method: method.toUpperCase(),
+    const requestOptions: http.RequestOptions = {
+      method: method?.toUpperCase(),
       headers: headers,
       agent: agent,
     };
@@ -40,19 +51,32 @@ function createAxiosSocks5ProxyAdapter(proxyUrl) {
         url,
         requestOptions,
         (res) => {
-          let responseData = "";
+          let responseData: any = "";
           res.on("data", (chunk) => {
             responseData += chunk;
           });
           res.on("end", () => {
-            resolve({
-              status: res.statusCode,
-              statusText: res.statusMessage,
+            let parsedData: any;
+            if (responseType === "json") {
+              try {
+                parsedData = JSON.parse(responseData);
+              } catch (e) {
+                parsedData = responseData;
+              }
+            } else {
+              parsedData = responseData;
+            }
+
+            const response: any = {
+              data: parsedData,
+              status: res.statusCode ?? 0,
+              statusText: res.statusMessage ?? "",
               headers: res.headers,
               config: config,
               request: req,
-              data: responseData,
-            });
+            };
+
+            resolve(response);
           });
         }
       );
@@ -70,12 +94,14 @@ function createAxiosSocks5ProxyAdapter(proxyUrl) {
 }
 
 // Usage example
-const socks5ProxyUrl = "socks5://localhost:9050";
 const axiosInstance = axios.create({
-  adapter: createAxiosSocks5ProxyAdapter(socks5ProxyUrl) as AxiosAdapter,
+  adapter: createAxiosSocks5ProxyAdapter(socks5ProxyUrl),
 });
 
-// const agent = new SocksProxyAgent("socks5://localhost:9050");
+const mangasee123 = new MANGA.Mangasee123(
+  null,
+  createAxiosSocks5ProxyAdapter(socks5ProxyUrl) as any
+);
 
 app.get("/", async (req, res) => {
   const response = await axiosInstance.get("https://api.ipify.org?format=json");
