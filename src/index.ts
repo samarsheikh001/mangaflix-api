@@ -19,7 +19,7 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 
 app.get("/", async (req, res) => {
-  const response = await axiosInstance.get("https://api.ipify.org?format=json");
+  const response = await axios.get("https://api.ipify.org?format=json");
   res.json({ success: true, data: response.data });
 });
 
