@@ -49,8 +49,9 @@ const axiosTor = axios.create({
   adapter: torAdapter,
 });
 
-app.get("/", (req, res) => {
-  res.json({ success: true });
+app.get("/", async (req, res) => {
+  const response = await axiosTor.get("https://httpbin.org/ip");
+  res.json({ success: true, data: response.data });
 });
 
 app.get("/manga/search/:query", async (req, res) => {
