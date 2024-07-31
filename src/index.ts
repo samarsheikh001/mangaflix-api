@@ -18,8 +18,8 @@ import url from "url";
 
 const app: Express = express();
 
-const port = process.env.PORT || 3000;
-const socks5ProxyUrl = "socks5://localhost:9050";
+const port = process.env.PORT || 3001;
+// const socks5ProxyUrl = "socks5://localhost:9050";
 
 app.use(cors());
 
@@ -93,18 +93,15 @@ function createAxiosSocks5ProxyAdapter(proxyUrl: string): AxiosAdapter {
   };
 }
 
-// Usage example
-const axiosInstance = axios.create({
-  adapter: createAxiosSocks5ProxyAdapter(socks5ProxyUrl),
-});
+// // Usage example
+// const axiosInstance = axios.create({
+//   adapter: createAxiosSocks5ProxyAdapter(socks5ProxyUrl),
+// });
 
-const mangasee123 = new MANGA.Mangasee123(
-  null,
-  createAxiosSocks5ProxyAdapter(socks5ProxyUrl) as any
-);
+const mangasee123 = new MANGA.Mangasee123();
 
 app.get("/", async (req, res) => {
-  const response = await axiosInstance.get("https://api.ipify.org?format=json");
+  const response = await axios.get("https://api.ipify.org?format=json");
   res.json({ success: true, data: response.data });
 });
 
