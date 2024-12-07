@@ -19,6 +19,7 @@ import url from "url";
 const app: Express = express();
 
 const port = process.env.PORT || 3001;
+const PORT = 3000;
 // const socks5ProxyUrl = "socks5://localhost:9050";
 
 app.use(cors());
@@ -125,6 +126,8 @@ app.get("/products/:query", async (req, res) => {
   res.json({ success: true, data });
 });
 
-app.listen(port, () =>
-  console.log(`[server]: Server is running at http://localhost:${port}`)
-);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`[server]: Server is running at http://0.0.0.0:${PORT}`);
+});
+
+// b003SeT2WnM5NYx6sd
